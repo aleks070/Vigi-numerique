@@ -1,12 +1,11 @@
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from app.api import network, events, lines, stations, map_layers
+from app.api import network, events, lines, stations, map_layers, auth
 from app.db.database import init_db
 from app.scheduler import start_scheduler
-
-import logging
 
 logging.basicConfig(
     level=logging.INFO,
@@ -16,11 +15,9 @@ logging.basicConfig(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Démarrage
     await init_db()
     start_scheduler()
     yield
-    # Arrêt (rien à faire pour l'instant)
 
 
 app = FastAPI(
@@ -30,7 +27,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — autorise le frontend React (localhost:3000)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
@@ -40,6 +36,7 @@ app.add_middleware(
 )
 
 # ─── Routers ──────────────────────────────────────────────────
+app.include_router(auth.router,       prefix="/auth",     tags=["Auth"])
 app.include_router(network.router,    prefix="/network",  tags=["Réseau"])
 app.include_router(events.router,     prefix="/events",   tags=["Événements"])
 app.include_router(lines.router,      prefix="/lines",    tags=["Lignes"])

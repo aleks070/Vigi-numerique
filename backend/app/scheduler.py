@@ -2,6 +2,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from app.core.config import settings
 from app.ingestion.prim_client import fetch_stop_monitoring, fetch_general_message
 from app.ingestion.persistence import save_observed_passages, save_official_incidents
+from app.detection.engine import run_detection_cycle
 import asyncio
 import logging
 
@@ -24,7 +25,6 @@ async def _collect_data_async():
     await save_official_incidents(incidents)
 
     # 2. Passages temps réel → récupération + persistence
-    # TODO: récupérer dynamiquement la liste des arrêts depuis PostgreSQL
     test_stops = [
         "STIF:StopPoint:Q:41027:",
     ]
@@ -36,6 +36,11 @@ async def _collect_data_async():
 
     logger.info(f"Passages temps réel récupérés : {total_passages}")
     logger.info("─── Collecte PRIM terminée ───")
+
+    # 3. Moteur de détection
+    logger.info("─── Moteur de détection démarré ───")
+    events_count = await run_detection_cycle()
+    logger.info(f"─── Détection terminée — {events_count} événement(s) ───")
 
 
 def start_scheduler():

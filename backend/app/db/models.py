@@ -7,6 +7,19 @@ from sqlalchemy.sql import func
 from app.db.database import Base
 
 
+class Agent(Base):
+    __tablename__ = "agents"
+
+    agent_id      = Column(String, primary_key=True)
+    email         = Column(String, unique=True, nullable=False)
+    full_name     = Column(String, nullable=False)
+    password_hash = Column(String, nullable=False)
+    role          = Column(String, nullable=False, default="operateur")
+    is_active     = Column(Boolean, default=True)
+    created_at    = Column(TIMESTAMP, server_default=func.now())
+    last_login    = Column(TIMESTAMP, nullable=True)
+
+
 class Line(Base):
     __tablename__ = "lines"
 
@@ -20,12 +33,19 @@ class Line(Base):
 class Station(Base):
     __tablename__ = "stations"
 
-    stop_id   = Column(String, primary_key=True)
-    stop_name = Column(String, nullable=False)
-    lat       = Column(Float)
-    lon       = Column(Float)
-    zone_id   = Column(String)
-    # geom géré directement en SQL via PostGIS
+    stop_id      = Column(String, primary_key=True)
+    stop_name    = Column(String, nullable=False)
+    lat          = Column(Float)
+    lon          = Column(Float)
+    zone_id      = Column(String)
+    quay_id      = Column(String)
+    quay_code    = Column(String)
+    nature       = Column(String)
+    city         = Column(String)
+    postal_code  = Column(String)
+    tariff_zone  = Column(String)
+    created_at   = Column(TIMESTAMP, server_default=func.now())
+    updated_at   = Column(TIMESTAMP, server_default=func.now())
 
 
 class ScheduledPassage(Base):
@@ -100,6 +120,7 @@ class Event(Base):
     status                 = Column(String, default="ouvert")
     official_incident_flag = Column(Boolean, default=False)
     description            = Column(Text)
+    justification          = Column(Text)
 
 
 class EventQualification(Base):
