@@ -29,8 +29,7 @@ git clone https://github.com/aleks070/Vigi-numerique.git
 cd Vigi-numerique
 
 # 2. Configurer
-#cp .env.example .env
-
+cp .env.exemple .env
 # → Renseigner IDFM_API_KEY dans .env
 
 # 3. Lancer
