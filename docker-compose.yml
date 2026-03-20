@@ -1,0 +1,86 @@
+services:
+
+  # ─── Base de données PostgreSQL ───────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: vigi_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-vigi}
+      POSTGRES_USER: ${POSTGRES_USER:-vigi_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vigi_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vigi_user} -d ${POSTGRES_DB:-vigi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Cache Redis (temps réel + pub/sub alertes) ───────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: vigi_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend FastAPI ───────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vigi_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_URL: postgresql://${POSTGRES_USER:-vigi_user}:${POSTGRES_PASSWORD:-vigi_password}@postgres:5432/${POSTGRES_DB:-vigi}
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ─── Frontend React ────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: vigi_frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:8000
+      VITE_WS_URL: ws://localhost:8000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+# ─── Volumes persistants ──────────────────────────────────────────────────
+volumes:
+  postgres_data:
+  redis_data:

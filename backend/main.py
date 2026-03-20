@@ -1,0 +1,52 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+
+from app.api import network, events, lines, stations, map_layers
+from app.db.database import init_db
+from app.scheduler import start_scheduler
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s — %(name)s — %(levelname)s — %(message)s"
+)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Démarrage
+    await init_db()
+    start_scheduler()
+    yield
+    # Arrêt (rien à faire pour l'instant)
+
+
+app = FastAPI(
+    title="Vigi Numérique API",
+    description="API de supervision du trafic Île-de-France — détection d'anomalies en quasi temps réel",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# CORS — autorise le frontend React (localhost:3000)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ─── Routers ──────────────────────────────────────────────────
+app.include_router(network.router,    prefix="/network",  tags=["Réseau"])
+app.include_router(events.router,     prefix="/events",   tags=["Événements"])
+app.include_router(lines.router,      prefix="/lines",    tags=["Lignes"])
+app.include_router(stations.router,   prefix="/stations", tags=["Stations"])
+app.include_router(map_layers.router, prefix="/map",      tags=["Carte"])
+
+
+@app.get("/health", tags=["Système"])
+async def health():
+    return {"status": "ok", "service": "vigi-numerique-api"}
