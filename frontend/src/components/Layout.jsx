@@ -1,5 +1,7 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { useAuth, AuthProvider } from '../hooks/useAuth'  // App.jsx
+//import { useAuth } from '../hooks/useAuth'
 
 const navItems = [
   { to: '/',       icon: '⬡', label: 'Supervision' },
@@ -15,6 +17,7 @@ const pageTitles = {
 
 export default function Layout() {
   const location = useLocation()
+  const { agent, logout } = useAuth()
   const [time, setTime] = useState(new Date())
 
   useEffect(() => {
@@ -58,10 +61,49 @@ export default function Layout() {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="status-dot">
+          {/* Infos agent */}
+          {agent && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-primary)' }}>
+                {agent.full_name}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
+                {agent.role}
+              </div>
+            </div>
+          )}
+
+          <div className="status-dot" style={{ marginBottom: 8 }}>
             <span className="dot" />
             Collecte active · 60s
           </div>
+
+          {/* Bouton déconnexion */}
+          <button
+            onClick={logout}
+            style={{
+              width: '100%', padding: '6px 10px',
+              background: 'none',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 12, color: 'var(--text-secondary)',
+              cursor: 'pointer', textAlign: 'left',
+              fontFamily: 'DM Sans, sans-serif',
+              transition: 'all 0.15s',
+            }}
+            onMouseOver={e => {
+              e.target.style.background = 'var(--perturbe-bg)'
+              e.target.style.color = 'var(--perturbe)'
+              e.target.style.borderColor = 'var(--perturbe)'
+            }}
+            onMouseOut={e => {
+              e.target.style.background = 'none'
+              e.target.style.color = 'var(--text-secondary)'
+              e.target.style.borderColor = 'var(--border)'
+            }}
+          >
+            Déconnexion
+          </button>
         </div>
       </aside>
 
